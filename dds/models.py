@@ -66,3 +66,7 @@ class DispatchLevel(models.Model):
         choices = dispatch_level_choices,
         #default = automatically set from WIMS data
         )
+    
+    #Field for specifying reason for change
+    #potentially can create choices here, but not sure what they'd be yet
+    Reason_for_changing_dispatch_level = models.CharField(max_length=1000, null=True)
