@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>BEU Dispatch Decision Support</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" />
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.1/dist/leaflet.css" />
+		<script src="https://unpkg.com/leaflet@1.0.1/dist/leaflet.js"></script>
+		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
+		<!--<script src="resources/leaflet.ajax.js"></script>-->
+		<script type="text/javascript" src="https://gitcdn.link/cdn/ericwalmsley/BEU_DispatchLevels/main/atoms_beu_unformd_wgs84.js"></script>
+												<!-- ^This is a mirror of the atoms data hosted on GitHub, this link can be used for any other hosted github script/fild: https://gitcdn.link/ -->
+		<script type="text/javascript" src="https://gitcdn.link/cdn/ericwalmsley/BEU_DispatchLevels/main/stations_beu_unformd_wgs84.js"></script>
+		<script type="text/javascript" src="https://gitcdn.link/repo/ericwalmsley/BEU_DispatchLevels/main/raws_beu_unformd.js"></script>
+		<script src="https://npmcdn.com/@turf/turf/turf.min.js"></script>
+		<style>
+			#header {
+				height: 75px;
+				background-color: lightblue;
+				style:bold;
+			}
+			#mapdiv {
+				height: 850px;
+				background-color: salmon;
+			}
+			#side_panel {
+				height: 850px;
+				background-color:;
+			}
+			#footer {
+				height: 75px;
+				background-color:darkgrey;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="header" class="col-md-12">
+			<h1 class="text-center">BEU Dispatch Decision Support</h1>
+		</div>
+		<div id="side_panel" class="col-md-3">
+			<h1 class="text-center">Fire Danger Rating Areas</h1>
+			<!--<button id="zoom2beu" class="form-control btn-primary">Zoom to BEU</button><br>-->
+			<h2>Coastal Timber: {{coti_dl}}</h2>
+				<div>
+					Most recent observation time (all stations in rating area): {{coti_most_recent_obs_hour}}
+					<br>
+					Average IC: {{coti_ic}}
+					<br>
+					<ul>
+					{% for k, v in coti_ics_dict.items %}
+						<li>{{k}}: {{v}}</li>
+					{% endfor %}
+					</ul>
+				</div>
+			<h2>Sierra De Salinas Shrub: {{sds_dl}}</h2>
+				<div>
+					Most recent observation time (all stations in rating area): {{sds_most_recent_obs_hour}}
+					<br>
+					Average IC: {{sds_ic}}
+					<br>
+					<ul>
+					{% for k, v in sds_ics_dict.items %}
+						<li>{{k}}: {{v}}</li>
+					{% endfor %}
+					</ul>
+				</div>
+			<h2>Salinas Valley: {{svg_dl}}</h2>
+				<div>
+					Most recent observation time (all stations in rating area): {{svg_most_recent_obs_hour}}
+					<br>
+					Average IC: {{svg_ic}}
+					<br>
+					<ul>
+					{% for k, v in svg_ics_dict.items %}
+						<li>{{k}}: {{v}}</li>
+					{% endfor %}
+					</ul>
+				</div>
+			<h2>Gabilan Shrub: {{gsh_dl}}</h2>
+				<div>
+					Most recent observation time (all stations in rating area): {{gsh_most_recent_obs_hour}}
+					<br>
+					Average IC: {{gsh_ic}}
+					<br>
+					<ul>
+					{% for k, v in gsh_ics_dict.items %}
+						<li>{{k}}: {{v}}</li>
+					{% endfor %}
+					</ul>
+				</div>
+			<h2>Diablo Grasslands: {{dgr_dl}}</h2>
+				<div>
+					Most recent observation time (all stations in rating area): {{dgr_most_recent_obs_hour}}
+					<br>
+					Average IC: {{dgr_ic}}
+					<br>
+					<ul>
+					{% for k, v in dgr_ics_dict.items %}
+						<li>{{k}}: {{v}}</li>
+					{% endfor %}
+					</ul>
+				</div>
+		</div>
+		<div id="mapdiv" class="col-md-9"></div>
+		<div id="footer" class="col-md-12">
+			<h4 id="map_coords" class="text-center">Latitude: 36.2, Longitude: -121, Zoom Level: 9</h4>
+			<h4 class="text-center">&copy; <a href="https://cutt.ly/calfireBEU">Eric Walmsley - Research Data Specialist II</a></h4>
+		</div>
+		<script>
+			//add map to div, set the view
+			var mymap = L.map('mapdiv')
+			mymap.setView([36.2, -121], 9);
+			
+			//add the OSM background layer
+			var backgroundLayer = L.tileLayer('http://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+				{attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
+			mymap.addLayer(backgroundLayer);
+			
+			//this is the lots of code way
+			//var hq_marker = L.marker([36.587363, -121.859116]);
+			//hq_marker.addTo(mymap);
+			//hq_marker.bindPopup("BEU Headquarters");
+			
+			//this is the shorter way where you chain everything together
+			//var hq_marker = L.marker([36.587363, -121.859116], title='BEU Headquarters').addTo(mymap).bindPopup("BEU Headquarters");
+			
+			//Pop-ups can include HTML and be complex, can literally be its own little webpage!
+			//hq_marker.bindPopup("<h3 class='text-center'>BEU Headquarters</h3><a href='https://www.fire.ca.gov/' target='blank'><img src='img/calfireblock_red.jpg' width='200px'></a>");
+			
+			//jQuery function to zoom to beu
+			// can also use $("#zoom2beu").on("click", function(){
+			$("#zoom2beu").click(function(){
+				mymap.setView([36.2, -121], 9);
+			});
+			
+			//$("#CT").click(function(){
+			//	mymap.fitBounds([
+			//	[36.68604, -120.94574],
+			//	[35.74874, -120.90866]
+			//	]);
+			//});
+			
+			//Get lat long each time the mouse moves
+			mymap.on('mousemove', function(e){ //recall that toFixed sets # decimal places
+				var str = "Latitude: " + e.latlng.lat.toFixed(5) + " Longitude: " + e.latlng.lng.toFixed(5) + " Zoom Level: " + mymap.getZoom();
+				$("#map_coords").html(str);
+			});
+			
+			//homework - create a function that adds a marker, with a popup containing the lat long, each time user clicks the map
+			//mymap.on('click', function(e){
+				//var for lat
+			//	var lat = e.latlng.lat.toFixed(5);
+				
+				//var for longi
+			//	var longi = e.latlng.lng.toFixed(5);
+				
+				//create variable for mouse marker, and add to map                                    had to use a break here cause \n didn't work 
+			//	var mouse_marker = L.marker([lat, longi]).addTo(mymap).bindPopup("Latitude: " + lat + "<br>" + "Longitude: " + longi).openPopup();
+
+				//deletes the marker when the popup is closed
+			//	mouse_marker.on('popupclose', function(){
+			//		mymap.removeLayer(mouse_marker);
+			//	});
+			//});
+			
+			//fx for base colors
+			function baseColor(fdra) {
+				return fdra == "Coastal Timber" ? "#018571" :
+						fdra == "Sierra De Salinas Shrub" ? "#80cdc1" :
+						fdra == "Salinas Valley" ? "#f5f5f5" :
+						fdra == "Gabilan Shrub" ? "#dfc27d" :
+						fdra == "Diablo Grasslands" ? "#a6611a":
+													"FFFFFF";
+			}
+			
+			//fx for styling the polygons
+			function style(feature){
+				return{
+					fillColor: baseColor(feature.properties.fdra_name),
+					weight: 2,
+					opacity: 1, 
+					color: 'white',
+					dashArray:'3',
+					fillOpacity: 0.75
+				}; //end return
+			} //end fx
+			
+			//fx for popup
+			function onEachFeature(feature, layer) {
+				if (feature.properties && feature.properties.fdra_name) {
+						layer.bindPopup(feature.properties.fdra_name);
+				}
+			}
+			
+			// Add geojson atoms data that is hosted on github, mirrored by GitCDN.link
+			L.geoJson(atoms_beu, {
+				style: style,
+				onEachFeature: onEachFeature
+			}).addTo(mymap);
+			
+			//Attempt to retrieve WIMS data
+			
+			
+		</script>
+	</body>
+</html>
