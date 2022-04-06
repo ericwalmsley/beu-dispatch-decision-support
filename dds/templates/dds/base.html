@@ -45,6 +45,22 @@
 			.info #currentFDRA {
 				margin: 6px 0;
 			}
+			.legend {
+				padding: 6px 8px;
+				background-color: rgba(255,255,255,0.8);
+				box-shadow: 0 0 15px rgba(0,0,0,0.2);
+				border-radius: 5px;
+			}
+			.legend div {
+				width: 18px;
+				height: 18px;
+				float: left;
+				margin-right: 8px;
+				opacity: 0.7;
+			}
+			div.legend.leaflet-control br {
+				clear: both;
+			}
 		</style>
 	</head>
 	<body>
@@ -303,7 +319,20 @@
 			var overlays = {
 				"FDRAs (SRA + FRA)": geojson,
 				}
-				
+			
+			//legend
+			let legend = L.control({position: "topright"});
+			legend.onAdd = function() {
+				let div = L.DomUtil.create("div", "legend"); 
+				div.innerHTML = 
+					'<b>Dispatch Level</b><br>' +
+					'<div style="background-color: #ff0000"></div>High<br>' +
+					'<div style="background-color: #FFFF00"></div>Medium<br>' +
+					'<div style="background-color: #00FF00"></div>Low<br>';
+				return div;
+			};
+			legend.addTo(mymap);
+			
 			// layer on off panel
 			L.control.layers(baseLayers, overlays).addTo(mymap);
 		</script>
