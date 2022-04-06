@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 	<head>
@@ -8,10 +9,8 @@
 		<script src="https://unpkg.com/leaflet@1.0.1/dist/leaflet.js"></script>
 		<script src="https://code.jquery.com/jquery-2.2.4.min.js"></script>
 		<!--<script src="resources/leaflet.ajax.js"></script>-->
-		<script type="text/javascript" src="https://gitcdn.link/cdn/ericwalmsley/BEU_DispatchLevels/main/atoms_beu_unformd_wgs84.js"></script>
+		<script type="text/javascript" src="{% static 'js/fdras_beu.js' %}"></script>
 												<!-- ^This is a mirror of the atoms data hosted on GitHub, this link can be used for any other hosted github script/fild: https://gitcdn.link/ -->
-		<script type="text/javascript" src="https://gitcdn.link/cdn/ericwalmsley/BEU_DispatchLevels/main/stations_beu_unformd_wgs84.js"></script>
-		<script type="text/javascript" src="https://gitcdn.link/repo/ericwalmsley/BEU_DispatchLevels/main/raws_beu_unformd.js"></script>
 		<script src="https://npmcdn.com/@turf/turf/turf.min.js"></script>
 		<style>
 			#header {
@@ -21,7 +20,7 @@
 			}
 			#mapdiv {
 				height: 850px;
-				background-color: salmon;
+				background-color: darkblue;
 			}
 			#side_panel {
 				height: 850px;
@@ -30,6 +29,21 @@
 			#footer {
 				height: 75px;
 				background-color:darkgrey;
+			}
+			.info {
+				padding: 6px 8px;
+				font: 14px/16px Arial, Helvetica, sans-serif;
+				background: rgba(255,255,255,0.8);
+				box-shadow: 0 0 15px rgba(0,0,0,0.2);
+				border-radius: 5px;
+				width: 10em;
+			}
+			.info h4 {
+				margin: 0 0 5px;
+				color: #777777;
+			}
+			.info #currentFDRA {
+				margin: 6px 0;
 			}
 		</style>
 	</head>
@@ -107,14 +121,46 @@
 			<h4 class="text-center">&copy; <a href="https://cutt.ly/calfireBEU">Eric Walmsley - Research Data Specialist II</a></h4>
 		</div>
 		<script>
+			
+			//setup for basemap options
+			var usgsTopo_attrib = 'Map courtesy of <a href="https://usgs.gov/">USGS</a>',
+			    usgsImagery_attrib = 'Imagery courtesy of <a href="https://usgs.gov/">USGS</a>';
+				
+			var usgsTopo_url = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}',
+				usgsImagery_url = 'https://basemap.nationalmap.gov/arcgis/rest/services/USGSImageryOnly/MapServer/tile/{z}/{y}/{x}';
+			
+			var usgsTopo = L.tileLayer(usgsTopo_url, {attribution: usgsTopo_attrib}),
+				usgsImagery = L.tileLayer(usgsImagery_url, {attribution: usgsImagery_attrib});
+			
 			//add map to div, set the view
-			var mymap = L.map('mapdiv')
+			var mymap = L.map('mapdiv', {
+				layers: [usgsTopo]
+				})
 			mymap.setView([36.2, -121], 9);
 			
+			var baseLayers = {
+			'USGS Topo': usgsTopo,
+			'USGS Imagery': usgsImagery
+			};
+			
+			let info = L.control({position: "bottomleft"});
+			info.onAdd = function() {
+				let div = L.DomUtil.create("div", "info");
+				div.innerHTML = '<h4>Fire Danger Rating Areas</h4><p id="currentFDRA"></p>';
+				return div;
+			};
+			info.addTo(mymap);
+			
 			//add the OSM background layer
-			var backgroundLayer = L.tileLayer('http://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
-				{attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
-			mymap.addLayer(backgroundLayer);
+			//var backgroundLayer = L.tileLayer('http://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+			//	{attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'});
+			//mymap.addLayer(backgroundLayer);
+			
+			//var maker = L.marker([36.4,-120.4],
+			//	{draggable: true,
+			//	title: 'Text that appears on hover',
+			//	opacity: 0.5}
+			//	).addTo(mymap);
 			
 			//this is the lots of code way
 			//var hq_marker = L.marker([36.587363, -121.859116]);
@@ -129,9 +175,9 @@
 			
 			//jQuery function to zoom to beu
 			// can also use $("#zoom2beu").on("click", function(){
-			$("#zoom2beu").click(function(){
-				mymap.setView([36.2, -121], 9);
-			});
+			//$("#zoom2beu").click(function(){
+			//	mymap.setView([36.2, -121], 9);
+			//});
 			
 			//$("#CT").click(function(){
 			//	mymap.fitBounds([
@@ -163,13 +209,32 @@
 			//	});
 			//});
 			
-			//fx for base colors
+			//declare a variable
+			var geojson;
+			
+			//fx for assigning dispatch level
+			function dl_color(e){
+				if (e == "Low") return "green";
+				if (e == "Medium") return "yellow";
+				if (e == "High") return "red";
+			}
+			
+			//fx for grabbing dispatch level from FDRA
+			function get_dl(e){
+				if (e == "Coastal Timber") return "{{coti_dl}}";
+				if (e == "Sierra de Salinas Shrub") return "{{sds_dl}}";
+				if (e == "Salinas Valley Grass") return "{{svg_dl}}";
+				if (e == "Gabilan Shrub") return "{{gsh_dl}}";
+				if (e == "Diablo Grass") return "{{dgr_dl}}";
+			}
+			
+			//fx to set colors
 			function baseColor(fdra) {
-				return fdra == "Coastal Timber" ? "#018571" :
-						fdra == "Sierra De Salinas Shrub" ? "#80cdc1" :
-						fdra == "Salinas Valley" ? "#f5f5f5" :
-						fdra == "Gabilan Shrub" ? "#dfc27d" :
-						fdra == "Diablo Grasslands" ? "#a6611a":
+				return fdra == "Coastal Timber" ? dl_color("{{coti_dl}}") :
+						fdra == "Sierra de Salinas Shrub" ? dl_color("{{sds_dl}}") :
+						fdra == "Salinas Valley Grass" ? dl_color("{{svg_dl}}") :
+						fdra == "Gabilan Shrub" ? dl_color("{{gsh_dl}}") :
+						fdra == "Diablo Grass" ? dl_color("{{dgr_dl}}"):
 													"FFFFFF";
 			}
 			
@@ -185,22 +250,62 @@
 				}; //end return
 			} //end fx
 			
-			//fx for popup
-			function onEachFeature(feature, layer) {
-				if (feature.properties && feature.properties.fdra_name) {
-						layer.bindPopup(feature.properties.fdra_name);
-				}
+			let info_p = document.getElementById("currentFDRA");
+			
+			// function to highlihgt geojson features
+			function highlightFeature(e) {
+				var layer = e.target;
+
+				layer.setStyle({
+					weight: 5,
+					color: '#666',
+					dashArray: '',
+					fillOpacity: 0.55
+				});
+
+				if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+					layer.bringToFront();
+				};
+				
+				info_p.innerHTML = "<br>" +
+					layer.feature.properties.fdra_name + "<br>" + "<br>" +
+					"Dispatch level: " + get_dl(layer.feature.properties.fdra_name);
 			}
 			
+			//function to remove the highlight
+			function resetHighlight(e) {
+				geojson.resetStyle(e.target);
+				info_p.innerHTML="";
+			}
+			
+			//function to fit to the zoomed feature
+			function zoomToFeature(e) {
+				mymap.fitBounds(e.target.getBounds());
+			}
+			
+			//tell
+			function onEachFeature(feature, layer) {
+				layer.on({
+					mouseover: highlightFeature,
+					mouseout: resetHighlight,
+					click: zoomToFeature
+				})
+			//	if (feature.properties && feature.properties.fdra_name) {
+			//			layer.bindPopup(feature.properties.fdra_name);
+			};
+			
 			// Add geojson atoms data that is hosted on github, mirrored by GitCDN.link
-			L.geoJson(atoms_beu, {
+			geojson = L.geoJson(fdras_beu, {
 				style: style,
 				onEachFeature: onEachFeature
 			}).addTo(mymap);
 			
-			//Attempt to retrieve WIMS data
-			
-			
+			var overlays = {
+				"FDRAs (SRA + FRA)": geojson,
+				}
+				
+			// layer on off panel
+			L.control.layers(baseLayers, overlays).addTo(mymap);
 		</script>
 	</body>
 </html>
