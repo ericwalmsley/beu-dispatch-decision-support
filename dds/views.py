@@ -34,10 +34,11 @@ def base_map(request):
     hl_times = [] #hunter ligget
     #--Sv Grass-- fdra includes parkfield
     br_times = [] #bradley
+    pa_y_times = []
     #--Gab Shrub--
     pi_times = [] #pinnacles
     he_times = [] #hernandez
-    pa_times = [] #parkfield
+    pa_x_times = [] #parkfield
     #--Diablo grass
     ho_times = [] #hollister
     sr_times = [] #santa rita
@@ -57,11 +58,11 @@ def base_map(request):
             bs_times.append(times['nfdr_tm'])
         #Sds Shrub fdra
         #if sta = hastings, and fuel model = z
-        if times['sta_nm'] == 'HASTINGS' and times['msgc'] == '16Z3A':
+        if times['sta_nm'] == 'HASTINGS' and times['msgc'] == '16X3A':
             #append time to as_times
             ha_times.append(times['nfdr_tm'])
         #if sta = hl and fuel model = z
-        if times['sta_nm'] == 'HUNTER LIGGET' and times['msgc'] == '16Z3A':
+        if times['sta_nm'] == 'HUNTER LIGGET' and times['msgc'] == '16X3A':
             #append time to bs_times
             hl_times.append(times['nfdr_tm'])
         #SV grass
@@ -72,16 +73,20 @@ def base_map(request):
         #if sta = pa and fuel model = y
         if times['sta_nm'] == 'PARKFIELD' and times['msgc'] == '16Y2A':
             #append time to pa_times
-            pa_times.append(times['nfdr_tm'])
+            pa_y_times.append(times['nfdr_tm'])
         #Gab Shrub
-        #if sta = he and fm = v
-        if times['sta_nm'] == 'HERNANDEZ' and times['msgc'] == '16V3A':
+        #if sta = he and fm = x
+        if times['sta_nm'] == 'HERNANDEZ' and times['msgc'] == '16X3A':
             #append time to as_times
             he_times.append(times['nfdr_tm'])
-        #if sta = pi and fuel model = v
-        if times['sta_nm'] == 'PINNACLES' and times['msgc'] == '16V2A':
+        #if sta = pi and fuel model = x
+        if times['sta_nm'] == 'PINNACLES' and times['msgc'] == '16X2A':
             #append time to bs_times
             pi_times.append(times['nfdr_tm'])
+        #if sta = pa_x and fuel model = x
+        if times['sta_nm'] == 'PARKFIELD' and times['msgc'] == '16X2A':
+            #append time to pa_times
+            pa_x_times.append(times['nfdr_tm'])
         #Diab Grass
         #if sta = ho and fm = y
         if times['sta_nm'] == 'HOLLISTER' and times['msgc'] == '16Y2A':
@@ -147,8 +152,8 @@ def base_map(request):
 
     coti_most_recent_obs_hour = get_most_recent_obs_time(bs_times, as_times) #coastal timber most recent hour
     sds_most_recent_obs_hour = get_most_recent_obs_time(ha_times, hl_times) #Sierra De Salinas most recent hour
-    svg_most_recent_obs_hour = get_most_recent_obs_time(br_times, pa_times) #Salinas grass most recent hour
-    gsh_most_recent_obs_hour = get_most_recent_obs_time(pi_times, pa_times, he_times) #Gab Sh most recent hour
+    svg_most_recent_obs_hour = get_most_recent_obs_time(br_times, pa_y_times) #Salinas grass most recent hour
+    gsh_most_recent_obs_hour = get_most_recent_obs_time(pi_times, pa_x_times, he_times) #Gab Sh most recent hour
     dgr_most_recent_obs_hour = get_most_recent_obs_time(ho_times, pr_times, sr_times) #Diab gr most recent hour
 
     #catch variable for times when data is unavailable
@@ -179,9 +184,9 @@ def base_map(request):
             #find most recent observation time
             if ic['nfdr_tm'] == sds_most_recent_obs_hour:
                 #append most recent obs time's IC to dict
-                if ic['sta_nm'] == 'HUNTER LIGGET' and ic['msgc'] == '16Z3A':
+                if ic['sta_nm'] == 'HUNTER LIGGET' and ic['msgc'] == '16X3A':
                     sds_ics_dict['Hunter Ligget IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'HASTINGS' and ic['msgc'] == '16Z3A':
+                if ic['sta_nm'] == 'HASTINGS' and ic['msgc'] == '16X3A':
                     sds_ics_dict['Hastings IC'] = float(ic['ic'])
     else:
         sds_data_unavailable = True
@@ -207,11 +212,11 @@ def base_map(request):
             #find most recent observation time
             if ic['nfdr_tm'] == gsh_most_recent_obs_hour:
                 #append most recent obs time's IC to dict
-                if ic['sta_nm'] == 'HERNANDEZ' and ic['msgc'] == '16V3A':
+                if ic['sta_nm'] == 'HERNANDEZ' and ic['msgc'] == '16X3A':
                     gsh_ics_dict['Hernandez IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'PARKFIELD' and ic['msgc'] == '16V2A': #note that 2 and 3 are different
+                if ic['sta_nm'] == 'PARKFIELD' and ic['msgc'] == '16X2A': #note that 2 and 3 are different
                     gsh_ics_dict['Parkfield IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'PINNACLES' and ic['msgc'] == '16V2A':
+                if ic['sta_nm'] == 'PINNACLES' and ic['msgc'] == '16X2A':
                     gsh_ics_dict['Pinnacles IC'] = float(ic['ic'])
     else:
         gsh_data_unavailable = True
@@ -240,14 +245,12 @@ def base_map(request):
         coti_ic = round(sum(coti_ics_dict.values())/len(coti_ics_dict.values()), 2)
         #print('Coastal Timber Ignition Component: ' + str(coti_ic))
         #set Coastal Timber DL
-        if coti_ic < 8:
+        if coti_ic < 12:
             coti_dl = 'Low'
-        elif coti_ic < 23:
+        elif coti_ic < 34:
             coti_dl = 'Medium'
-        elif coti_ic < 68:
-            coti_dl = 'High'
         else:
-            coti_dl = 'Unprecedented'    
+            coti_dl = 'High'    
         #print('Coastal Timber Dispatch Level: ' + coti_dl)
     else:
         #print('-----Coastal Timber-----')
@@ -262,14 +265,12 @@ def base_map(request):
         sds_ic = round(sum(sds_ics_dict.values())/len(sds_ics_dict.values()), 2)
         #print('Sierra De Salinas Ignition Component: ' + str(sds_ic))
         #set Coastal Timber DL
-        if sds_ic < 9:
+        if sds_ic < 16:
             sds_dl = 'Low'
-        elif sds_ic < 48:
+        elif sds_ic < 40:
             sds_dl = 'Medium'
-        elif sds_ic < 91:
-            sds_dl = 'High'
         else:
-            sds_dl = 'Unprecedented'    
+            sds_dl = 'High'  
         #print('Sierra De Salinas Dispatch Level: ' + coti_dl)
     else:
         #print('-----Sierra de Salinas Shrub-----')
@@ -284,14 +285,12 @@ def base_map(request):
         svg_ic = round(sum(svg_ics_dict.values())/len(svg_ics_dict.values()), 2)
         #print('Salinas Valley Grass Component: ' + str(svg_ic))
         #set Coastal Timber DL
-        if svg_ic < 10:
+        if svg_ic < 15:
             svg_dl = 'Low'
-        elif svg_ic < 38:
+        elif svg_ic < 40:
             svg_dl = 'Medium'
-        elif svg_ic < 76:
-            svg_dl = 'High'
         else:
-            svg_dl = 'Unprecedented'    
+            svg_dl = 'High'    
         #print('Salinas Valley Grass Dispatch Level: ' + svg_dl)
     else:
         #print('-----Salinas Valley Grass-----')
@@ -306,14 +305,12 @@ def base_map(request):
         gsh_ic = round(sum(gsh_ics_dict.values())/len(gsh_ics_dict.values()), 2)
         #print('Gabilan Shrub Ignition Component: ' + str(gsh_ic))
         #set gab shrub dl
-        if gsh_ic < 8:
+        if gsh_ic < 14:
             gsh_dl = 'Low'
-        elif gsh_ic < 33:
+        elif gsh_ic < 39:
             gsh_dl = 'Medium'
-        elif gsh_ic < 71:
-            gsh_dl = 'High'
         else:
-            gsh_dl = 'Unprecedented'
+            gsh_dl = 'High'
         #print('Gabilan Shrub Dispatch Level: ' + gsh_dl)
     else:
         #print('-----Gabilan Shrub-----')
@@ -328,14 +325,12 @@ def base_map(request):
         dgr_ic = round(sum(dgr_ics_dict.values())/len(dgr_ics_dict.values()), 2)
         #print('Diablo Grass Ignition Component: ' + str(dgr_ic))
         #set gab shrub dl
-        if dgr_ic < 9:
+        if dgr_ic < 15:
             dgr_dl = 'Low'
-        elif dgr_ic < 37:
+        elif dgr_ic < 38:
             dgr_dl = 'Medium'
-        elif dgr_ic < 73:
-            dgr_dl = 'High'
         else:
-            dgr_dl = 'Unprecedented'
+            dgr_dl = 'High'
         #print('Diablo Grass Dispatch Level: ' + gsh_dl)
     else:
         #print('-----Diablo Grass-----')
