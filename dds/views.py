@@ -21,8 +21,6 @@ def base_map(request):
     except ConnectionError as error:
         print("The WIMS server may currently be down. Please try again later.")
 
-    #print('Payload delivery time: ', str(end-start))
-
     ## Get available times from both stations
     #create list of times for each station
     #--Coastal Timber--
@@ -34,11 +32,11 @@ def base_map(request):
     hl_times = [] #hunter ligget
     #--Sv Grass-- fdra includes parkfield
     br_times = [] #bradley
-    pa_y_times = []
+    pa_times = [] #parkfield
     #--Gab Shrub--
     pi_times = [] #pinnacles
     he_times = [] #hernandez
-    pa_x_times = [] #parkfield
+    #parkfield times already checked above
     #--Diablo grass
     ho_times = [] #hollister
     sr_times = [] #santa rita
@@ -49,57 +47,69 @@ def base_map(request):
     for times in wims_od['nfdrs']['row']:
         #Coastal Timber
         #if sta = as and fuel model = x
-        if times['sta_nm'] == 'ARROYO_SECO' and times['msgc'] == '16X4A':
+        if times['sta_nm'] == 'ARROYO_SECO' and times['msgc'] == '16W4A':
             #append time to as_times
             as_times.append(times['nfdr_tm'])
         #if sta = bs and fuel model = x
-        if times['sta_nm'] == 'BIG SUR' and times['msgc'] == '16X4A':
+        if times['sta_nm'] == 'BIG SUR' and times['msgc'] == '16W4A':
             #append time to bs_times
             bs_times.append(times['nfdr_tm'])
+            
         #Sds Shrub fdra
         #if sta = hastings, and fuel model = z
-        if times['sta_nm'] == 'HASTINGS' and times['msgc'] == '16X3A':
+        if times['sta_nm'] == 'HASTINGS' and times['msgc'] == '16V3A':
             #append time to as_times
             ha_times.append(times['nfdr_tm'])
         #if sta = hl and fuel model = z
-        if times['sta_nm'] == 'HUNTER LIGGET' and times['msgc'] == '16X3A':
+        if times['sta_nm'] == 'HUNTER LIGGET' and times['msgc'] == '16V3A':
             #append time to bs_times
             hl_times.append(times['nfdr_tm'])
+            
         #SV grass
         # if sta = br and fm =y
-        if times['sta_nm'] == 'BRADLEY' and times['msgc'] == '16Y2A':
+        if times['sta_nm'] == 'BRADLEY' and times['msgc'] == '16X2A':
             #append time to br_times
             br_times.append(times['nfdr_tm'])
         #if sta = pa and fuel model = y
-        if times['sta_nm'] == 'PARKFIELD' and times['msgc'] == '16Y2A':
+        if times['sta_nm'] == 'PARKFIELD' and times['msgc'] == '16X2A':
             #append time to pa_times
-            pa_y_times.append(times['nfdr_tm'])
+            pa_times.append(times['nfdr_tm'])
+            
         #Gab Shrub
-        #if sta = he and fm = x
+        #if sta = he and fm = v
         if times['sta_nm'] == 'HERNANDEZ' and times['msgc'] == '16X3A':
             #append time to as_times
             he_times.append(times['nfdr_tm'])
-        #if sta = pi and fuel model = x
+        #if sta = pi and fuel model = v
         if times['sta_nm'] == 'PINNACLES' and times['msgc'] == '16X2A':
             #append time to bs_times
             pi_times.append(times['nfdr_tm'])
-        #if sta = pa_x and fuel model = x
-        if times['sta_nm'] == 'PARKFIELD' and times['msgc'] == '16X2A':
-            #append time to pa_times
-            pa_x_times.append(times['nfdr_tm'])
+        #Parkfield already addressed above
+        
         #Diab Grass
         #if sta = ho and fm = y
-        if times['sta_nm'] == 'HOLLISTER' and times['msgc'] == '16Y2A':
+        if times['sta_nm'] == 'HOLLISTER' and times['msgc'] == '16Z2A':
             #append time to as_times
             ho_times.append(times['nfdr_tm'])
         #if sta = sr and fuel model = y
-        if times['sta_nm'] == 'SANTA RITA' and times['msgc'] == '16Y2A':
+        if times['sta_nm'] == 'SANTA RITA' and times['msgc'] == '16Z2A':
             #append time to bs_times
             sr_times.append(times['nfdr_tm'])
         #if sta = pr and fm = y
-        if times['sta_nm'] == 'PANOCHE ROAD' and times['msgc'] == '16Y1A':
+        if times['sta_nm'] == 'PANOCHE ROAD' and times['msgc'] == '16Z1A':
             #append time to as_times
             pr_times.append(times['nfdr_tm'])
+
+    #convert to integers and sort so we can calculate dispatch level for the entire day
+    def ints_and_sort(list):
+        list = [int(i) for i in list]
+        list.sort()
+        return list
+
+    as_times = ints_and_sort(as_times); bs_times = ints_and_sort(bs_times); ha_times = ints_and_sort(ha_times)
+    hl_times = ints_and_sort(hl_times); br_times = ints_and_sort(br_times); pa_times = ints_and_sort(pa_times)
+    pi_times = ints_and_sort(pi_times); he_times = ints_and_sort(he_times); ho_times = ints_and_sort(ho_times)
+    sr_times = ints_and_sort(sr_times); pr_times = ints_and_sort(pr_times)
 
     ## Compare times to determine most recent observation
     #if lists are the same, using sets because the order is inconsistent
@@ -137,7 +147,7 @@ def base_map(request):
                     #handle the no data currently available
                     most_recent_obs_time = 'Station(s) have no NFDRS index data available today.'
                 return most_recent_obs_time
-            else: #if one station has more times than another
+            else: #if one station has more or less times than another
                 #get values that are in all stations, put into another list
                 times_at_all_stations = [v for v in station_times_list and station2_times_list and station3_times_list if v in station_times_list and v in station2_times_list and v in station3_times_list]
                 #convert list items to integers
@@ -152,9 +162,10 @@ def base_map(request):
 
     coti_most_recent_obs_hour = get_most_recent_obs_time(bs_times, as_times) #coastal timber most recent hour
     sds_most_recent_obs_hour = get_most_recent_obs_time(ha_times, hl_times) #Sierra De Salinas most recent hour
-    svg_most_recent_obs_hour = get_most_recent_obs_time(br_times, pa_y_times) #Salinas grass most recent hour
-    gsh_most_recent_obs_hour = get_most_recent_obs_time(pi_times, pa_x_times, he_times) #Gab Sh most recent hour
+    svg_most_recent_obs_hour = get_most_recent_obs_time(br_times, pa_times) #Salinas grass most recent hour
+    gsh_most_recent_obs_hour = get_most_recent_obs_time(pi_times, pa_times, he_times) #Gab Sh most recent hour
     dgr_most_recent_obs_hour = get_most_recent_obs_time(ho_times, pr_times, sr_times) #Diab gr most recent hour
+
 
     #catch variable for times when data is unavailable
     coti_data_unavailable = False
@@ -164,203 +175,178 @@ def base_map(request):
     dgr_data_unavailable = False
 
     if coti_most_recent_obs_hour != 'Station(s) have no NFDRS index data available today.':
-        coti_ics_dict = {} #empty dict for storing ignition compontents
+        coti_bis_dict = {} #empty dict for storing ignition compontents
         #for each row in wims data
-        for ic in wims_od['nfdrs']['row']:
+        for bi in wims_od['nfdrs']['row']:
             #find most recent observation time
-            if ic['nfdr_tm'] == coti_most_recent_obs_hour:
+            if bi['nfdr_tm'] == coti_most_recent_obs_hour:
                 #append most recent obs time's IC to dict
-                if ic['sta_nm'] == 'ARROYO_SECO' and ic['msgc'] == '16X4A':
-                    coti_ics_dict['Arroyo Seco IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'BIG SUR' and ic['msgc'] == '16X4A':
-                    coti_ics_dict['Big Sur IC'] = float(ic['ic'])
+                if bi['sta_nm'] == 'ARROYO_SECO' and bi['msgc'] == '16W4A':
+                    coti_bis_dict['Arroyo Seco BI'] = float(bi['bi'])
+                if bi['sta_nm'] == 'BIG SUR' and bi['msgc'] == '16W4A':
+                    coti_bis_dict['Big Sur BI'] = float(bi['bi'])
     else:
         coti_data_unavailable = True
 
     if sds_most_recent_obs_hour != 'Station(s) have no NFDRS index data available today.':
-        sds_ics_dict = {}        
+        sds_bis_dict = {}        
         #for each row in wims data
-        for ic in wims_od['nfdrs']['row']:
+        for bi in wims_od['nfdrs']['row']:
             #find most recent observation time
-            if ic['nfdr_tm'] == sds_most_recent_obs_hour:
+            if bi['nfdr_tm'] == sds_most_recent_obs_hour:
                 #append most recent obs time's IC to dict
-                if ic['sta_nm'] == 'HUNTER LIGGET' and ic['msgc'] == '16X3A':
-                    sds_ics_dict['Hunter Ligget IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'HASTINGS' and ic['msgc'] == '16X3A':
-                    sds_ics_dict['Hastings IC'] = float(ic['ic'])
+                if bi['sta_nm'] == 'HUNTER LIGGET' and bi['msgc'] == '16V3A':
+                    sds_bis_dict['Hunter Ligget BI'] = float(bi['bi'])
+                if bi['sta_nm'] == 'HASTINGS' and bi['msgc'] == '16V3A':
+                    sds_bis_dict['Hastings BI'] = float(bi['bi'])
     else:
         sds_data_unavailable = True
 
     if svg_most_recent_obs_hour != 'Station(s) have no NFDRS index data available today.':
-        svg_ics_dict = {}
+        svg_bis_dict = {}
         #for each row in wims data
-        for ic in wims_od['nfdrs']['row']:
+        for bi in wims_od['nfdrs']['row']:
             #find most recent observation time
-            if ic['nfdr_tm'] == svg_most_recent_obs_hour:
+            if bi['nfdr_tm'] == svg_most_recent_obs_hour:
                 #append most recent obs time's IC to dict
-                if ic['sta_nm'] == 'BRADLEY' and ic['msgc'] == '16Y2A':
-                    svg_ics_dict['Bradley IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'PARKFIELD' and ic['msgc'] == '16Y2A':
-                    svg_ics_dict['Parkfield IC'] = float(ic['ic'])
+                if bi['sta_nm'] == 'BRADLEY' and bi['msgc'] == '16X2A':
+                    svg_bis_dict['Bradley BI'] = float(bi['bi'])
+                if bi['sta_nm'] == 'PARKFIELD' and bi['msgc'] == '16X2A':
+                    svg_bis_dict['Parkfield BI'] = float(bi['bi'])
     else:
         svg_data_unavailable = True
 
     if gsh_most_recent_obs_hour != 'Station(s) have no NFDRS index data available today.':
         #for each row in wims data
-        gsh_ics_dict = {}  
-        for ic in wims_od['nfdrs']['row']:
+        gsh_bis_dict = {}  
+        for bi in wims_od['nfdrs']['row']:
             #find most recent observation time
-            if ic['nfdr_tm'] == gsh_most_recent_obs_hour:
+            if bi['nfdr_tm'] == gsh_most_recent_obs_hour:
                 #append most recent obs time's IC to dict
-                if ic['sta_nm'] == 'HERNANDEZ' and ic['msgc'] == '16X3A':
-                    gsh_ics_dict['Hernandez IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'PARKFIELD' and ic['msgc'] == '16X2A': #note that 2 and 3 are different
-                    gsh_ics_dict['Parkfield IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'PINNACLES' and ic['msgc'] == '16X2A':
-                    gsh_ics_dict['Pinnacles IC'] = float(ic['ic'])
+                if bi['sta_nm'] == 'HERNANDEZ' and bi['msgc'] == '16X3A':
+                    gsh_bis_dict['Hernandez BI'] = float(bi['bi'])
+                if bi['sta_nm'] == 'PARKFIELD' and bi['msgc'] == '16X2A': #note that 2 and 3 are different
+                    gsh_bis_dict['Parkfield BI'] = float(bi['bi'])
+                if bi['sta_nm'] == 'PINNACLES' and bi['msgc'] == '16X2A':
+                    gsh_bis_dict['Pinnacles BI'] = float(bi['bi'])
     else:
         gsh_data_unavailable = True
 
     if dgr_most_recent_obs_hour != 'Station(s) have no NFDRS index data available today.':
-        dgr_ics_dict = {}
-        for ic in wims_od['nfdrs']['row']:
+        dgr_bis_dict = {}
+        for bi in wims_od['nfdrs']['row']:
             #find most recent observation time
-            if ic['nfdr_tm'] == dgr_most_recent_obs_hour:
+            if bi['nfdr_tm'] == dgr_most_recent_obs_hour:
                 #append most recent obs time's IC to dict
-                if ic['sta_nm'] == 'HOLLISTER' and ic['msgc'] == '16Y2A':
-                    dgr_ics_dict['Hollister IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'SANTA RITA' and ic['msgc'] == '16Y2A': #note that 2 and 3 are different
-                    dgr_ics_dict['Santa Rita IC'] = float(ic['ic'])
-                if ic['sta_nm'] == 'PANOCHE ROAD' and ic['msgc'] == '16Y1A':
-                    dgr_ics_dict['Panoche Road IC'] = float(ic['ic'])
+                if bi['sta_nm'] == 'HOLLISTER' and bi['msgc'] == '16Z2A':
+                    dgr_bis_dict['Hollister BI'] = float(bi['bi'])
+                if bi['sta_nm'] == 'SANTA RITA' and bi['msgc'] == '16Z2A': #note that 2 and 3 are different
+                    dgr_bis_dict['Santa Rita BI'] = float(bi['bi'])
+                if bi['sta_nm'] == 'PANOCHE ROAD' and bi['msgc'] == '16Z1A':
+                    dgr_bis_dict['Panoche Road BI'] = float(bi['bi'])
     else:
         dgr_data_unavailable = True
 
     if coti_data_unavailable == False:
-        #print('-----Coastal Timber-----')
-        #print('Most recently obs time:', coti_most_recent_obs_hour)
-        #print('Ignition components:')
-        #print(coti_ics_dict)
         #calculate average
-        coti_ic = round(sum(coti_ics_dict.values())/len(coti_ics_dict.values()), 2)
-        #print('Coastal Timber Ignition Component: ' + str(coti_ic))
+        coti_bi = round(sum(coti_bis_dict.values())/len(coti_bis_dict.values()), 2)
         #set Coastal Timber DL
-        if coti_ic < 12:
+        if coti_bi < 8:
             coti_dl = 'Low'
-        elif coti_ic < 34:
+        elif coti_bi < 24:
             coti_dl = 'Medium'
+        elif coti_bi < 56:
+            coti_dl = 'High'
         else:
-            coti_dl = 'High'    
-        #print('Coastal Timber Dispatch Level: ' + coti_dl)
+            coti_dl = 'Unprecedented'
     else:
-        #print('-----Coastal Timber-----')
-        print(coti_most_recent_obs_hour)
+        coti_dl = "--"
 
     if sds_data_unavailable == False:
-        #print('-----Sierra De Salinas Shrub-----')
-        #print('Most recently obs time:', sds_most_recent_obs_hour)
-        #print('Ignition components: ' )
-        #print(sds_ics_dict)
         #calculate average
-        sds_ic = round(sum(sds_ics_dict.values())/len(sds_ics_dict.values()), 2)
-        #print('Sierra De Salinas Ignition Component: ' + str(sds_ic))
-        #set Coastal Timber DL
-        if sds_ic < 16:
+        sds_bi = round(sum(sds_bis_dict.values())/len(sds_bis_dict.values()), 2)
+        #set DL
+        if sds_bi < 9:
             sds_dl = 'Low'
-        elif sds_ic < 40:
+        elif sds_bi < 48:
             sds_dl = 'Medium'
+        elif sds_bi < 91:
+            sds_dl = 'High'
         else:
-            sds_dl = 'High'  
-        #print('Sierra De Salinas Dispatch Level: ' + coti_dl)
+            sds_dl = 'Unprecedented'
     else:
-        #print('-----Sierra de Salinas Shrub-----')
-        print(sds_most_recent_obs_hour)
+        sds_dl = "--"
 
     if svg_data_unavailable == False:
-        #print('-----Salinas Valley Grass-----')
-        #print('Most recently obs time:', svg_most_recent_obs_hour)
-        #print('Ignition components: ')
-        #print(svg_ics_dict)
         #calculate average
-        svg_ic = round(sum(svg_ics_dict.values())/len(svg_ics_dict.values()), 2)
-        #print('Salinas Valley Grass Component: ' + str(svg_ic))
-        #set Coastal Timber DL
-        if svg_ic < 15:
+        svg_bi = round(sum(svg_bis_dict.values())/len(svg_bis_dict.values()), 2)
+        #set DL
+        if svg_bi < 53:
             svg_dl = 'Low'
-        elif svg_ic < 40:
+        elif svg_bi < 126:
             svg_dl = 'Medium'
+        elif svg_bi < 245:
+            svg_dl = 'High'
         else:
-            svg_dl = 'High'    
-        #print('Salinas Valley Grass Dispatch Level: ' + svg_dl)
+            svg_dl = 'Unprecedented'
     else:
-        #print('-----Salinas Valley Grass-----')
-        print(svg_most_recent_obs_hour)
+        svg_dl = "--"
 
     if gsh_data_unavailable == False:
-        #print('-----Gabilan Shrub-----')
-        #print('Most recently obs time:', gsh_most_recent_obs_hour)
-        #print('Ignition components:')
-        #print(gsh_ics_dict)
         #calculate average
-        gsh_ic = round(sum(gsh_ics_dict.values())/len(gsh_ics_dict.values()), 2)
-        #print('Gabilan Shrub Ignition Component: ' + str(gsh_ic))
+        gsh_bi = round(sum(gsh_bis_dict.values())/len(gsh_bis_dict.values()), 2)
         #set gab shrub dl
-        if gsh_ic < 14:
+        if gsh_bi < 60:
             gsh_dl = 'Low'
-        elif gsh_ic < 39:
+        elif gsh_bi < 160:
             gsh_dl = 'Medium'
-        else:
+        elif gsh_bi < 258:
             gsh_dl = 'High'
-        #print('Gabilan Shrub Dispatch Level: ' + gsh_dl)
+        else:
+            gsh_dl = 'Unprecedented'
     else:
-        #print('-----Gabilan Shrub-----')
         print(gsh_most_recent_obs_hour)
 
     if dgr_data_unavailable == False:
-        #print('-----Diablo Grass-----')
-        #print('Most recently obs time:', dgr_most_recent_obs_hour)
-        #print('Ignition components:')
-        #print(dgr_ics_dict)
         #calculate average
-        dgr_ic = round(sum(dgr_ics_dict.values())/len(dgr_ics_dict.values()), 2)
-        #print('Diablo Grass Ignition Component: ' + str(dgr_ic))
+        dgr_bi = round(sum(dgr_bis_dict.values())/len(dgr_bis_dict.values()), 2)
         #set gab shrub dl
-        if dgr_ic < 15:
+        if dgr_bi < 58:
             dgr_dl = 'Low'
-        elif dgr_ic < 38:
+        elif dgr_bi < 90:
             dgr_dl = 'Medium'
-        else:
+        elif dgr_bi < 152:
             dgr_dl = 'High'
-        #print('Diablo Grass Dispatch Level: ' + gsh_dl)
+        else:
+            gsh_dl = 'Unprecedented'
     else:
-        #print('-----Diablo Grass-----')
         print(dgr_most_recent_obs_hour)
 
     end_final = datetime.today()
-
+    dispatchLevelsCalculated = True
     #print('Payload + data calculation: ', str(end_final-start))
 
     #print('Payload + data calculation: ', str(end_final-start))
     return render(request, 'dds/base.html', 
-    {
-    'coti_most_recent_obs_hour':coti_most_recent_obs_hour,
-    'coti_ics_dict': coti_ics_dict,
-    'coti_ic': coti_ic,
-    'coti_dl': coti_dl,
-    'sds_most_recent_obs_hour': sds_most_recent_obs_hour,
-    'sds_ics_dict': sds_ics_dict,
-    'sds_ic': sds_ic,
-    'sds_dl': sds_dl,
-    'svg_most_recent_obs_hour':svg_most_recent_obs_hour,
-    'svg_ics_dict': svg_ics_dict,
-    'svg_ic': svg_ic,
-    'svg_dl': svg_dl,
-    'gsh_most_recent_obs_hour': gsh_most_recent_obs_hour,
-    'gsh_ics_dict': gsh_ics_dict,
-    'gsh_ic': gsh_ic,
-    'gsh_dl': gsh_dl,
-    'dgr_most_recent_obs_hour': dgr_most_recent_obs_hour,
-    'dgr_ics_dict': dgr_ics_dict,
-    'dgr_ic': dgr_ic,
-    'dgr_dl': dgr_dl,
-    })
+            {
+            'coti_most_recent_obs_hour':coti_most_recent_obs_hour,
+            'coti_bis_dict': coti_bis_dict,
+            'coti_bi': coti_bi,
+            'coti_dl': coti_dl,
+            'sds_most_recent_obs_hour': sds_most_recent_obs_hour,
+            'sds_bis_dict': sds_bis_dict,
+            'sds_bi': sds_bi,
+            'sds_dl': sds_dl,
+            'svg_most_recent_obs_hour':svg_most_recent_obs_hour,
+            'svg_bis_dict': svg_bis_dict,
+            'svg_bi': svg_bi,
+            'svg_dl': svg_dl,
+            'gsh_most_recent_obs_hour': gsh_most_recent_obs_hour,
+            'gsh_bis_dict': gsh_bis_dict,
+            'gsh_bi': gsh_bi,
+            'gsh_dl': gsh_dl,
+            'dgr_most_recent_obs_hour': dgr_most_recent_obs_hour,
+            'dgr_bis_dict': dgr_bis_dict,
+            'dgr_bi': dgr_bi,
+            'dgr_dl': dgr_dl,
+            })

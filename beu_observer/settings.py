@@ -125,3 +125,43 @@ STATIC_ROOT = BASE_DIR / 'static'
 # https://docs.djangoproject.com/en/4.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+#CSP_DEFAULT_SRC = ["'none'"]
+
+#Scripts are allowed to load from these sources
+# CSP_SCRIPT_SRC = [
+    # "https://maxcdn.bootstrapcdn.com/",
+    # "https://unpkg.com/",
+    # "https://code.jquery.com/",
+    # "https://npmcdn.com/",
+    # "'self'",
+# ]
+
+# #Style sheets are allowed to load from these sources
+# CSP_STYLE_SRC = [
+    # "https://maxcdn.bootstrapcdn.com/",
+    # "https://unpkg.com/",
+    # "https://code.jquery.com/",
+    # "https://npmcdn.com/",
+    # "'self'",
+    # "'unsafe-inline'",
+# ]
+
+# CSP_STYLE_SRC_ATTR = [
+    # "'self'",
+    # "'unsafe-inline'",
+# ]
+
+# CSP_IMG_SRC = [
+    # "https://basemap.nationalmap.gov/",
+    # "https://unpkg.com/",
+# ]
+
+# #fonts are allowed from these sources
+# CSP_FONT_SRC = [
+    # "https://maxcdn.bootstrapcdn.com/"
+# ]
+
+# #enables in line styling
+# #CSP_INCLUDE_NONCE_IN = ['style-src', 'script-src', 'style-src-attr']
+
