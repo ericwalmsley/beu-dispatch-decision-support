@@ -251,11 +251,11 @@ def base_map(request):
         #calculate average
         coti_bi = round(sum(coti_bis_dict.values())/len(coti_bis_dict.values()), 2)
         #set Coastal Timber DL
-        if coti_bi < 8:
+        if coti_bi <= 8:
             coti_dl = 'Low'
-        elif coti_bi < 24:
+        elif coti_bi <= 24:
             coti_dl = 'Medium'
-        elif coti_bi < 56:
+        elif coti_bi <= 56:
             coti_dl = 'High'
         else:
             coti_dl = 'Unprecedented'
@@ -266,11 +266,11 @@ def base_map(request):
         #calculate average
         sds_bi = round(sum(sds_bis_dict.values())/len(sds_bis_dict.values()), 2)
         #set DL
-        if sds_bi < 9:
+        if sds_bi <= 8:
             sds_dl = 'Low'
-        elif sds_bi < 48:
+        elif sds_bi <= 30:
             sds_dl = 'Medium'
-        elif sds_bi < 91:
+        elif sds_bi <= 83:
             sds_dl = 'High'
         else:
             sds_dl = 'Unprecedented'
@@ -281,11 +281,11 @@ def base_map(request):
         #calculate average
         svg_bi = round(sum(svg_bis_dict.values())/len(svg_bis_dict.values()), 2)
         #set DL
-        if svg_bi < 53:
+        if svg_bi <= 53:
             svg_dl = 'Low'
-        elif svg_bi < 126:
+        elif svg_bi <= 126:
             svg_dl = 'Medium'
-        elif svg_bi < 245:
+        elif svg_bi <= 245:
             svg_dl = 'High'
         else:
             svg_dl = 'Unprecedented'
@@ -296,11 +296,11 @@ def base_map(request):
         #calculate average
         gsh_bi = round(sum(gsh_bis_dict.values())/len(gsh_bis_dict.values()), 2)
         #set gab shrub dl
-        if gsh_bi < 60:
+        if gsh_bi <= 60:
             gsh_dl = 'Low'
-        elif gsh_bi < 160:
+        elif gsh_bi <= 160:
             gsh_dl = 'Medium'
-        elif gsh_bi < 258:
+        elif gsh_bi <= 258:
             gsh_dl = 'High'
         else:
             gsh_dl = 'Unprecedented'
@@ -311,11 +311,11 @@ def base_map(request):
         #calculate average
         dgr_bi = round(sum(dgr_bis_dict.values())/len(dgr_bis_dict.values()), 2)
         #set gab shrub dl
-        if dgr_bi < 58:
+        if dgr_bi <= 58:
             dgr_dl = 'Low'
-        elif dgr_bi < 90:
+        elif dgr_bi <= 90:
             dgr_dl = 'Medium'
-        elif dgr_bi < 152:
+        elif dgr_bi <= 152:
             dgr_dl = 'High'
         else:
             gsh_dl = 'Unprecedented'
